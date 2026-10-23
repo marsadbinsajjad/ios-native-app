@@ -1,7 +1,7 @@
 name: Build iOS App
 
 on:
-  workflow_dispatch: # Allows you to manually trigger the build from GitHub
+  workflow_dispatch: # Allows manual trigger from GitHub
 
 jobs:
   build:

@@ -25,6 +25,21 @@ jobs:
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
+      - name: Automatically Patch SceneDelegate for Capacitor
+        run: |
+          python3 - << 'EOF'
+          import os
+          scene_path = "ios/App/App/SceneDelegate.swift"
+          if os.path.exists(scene_path):
+              with open(scene_path, "r") as f:
+                  content = f.read()
+              if "import Capacitor" not in content:
+                  content = content.replace("import UIKit", "import UIKit\nimport Capacitor")
+                  with open(scene_path, "w") as f:
+                      f.write(content)
+                  print("Successfully injected import Capacitor into SceneDelegate.swift")
+          EOF
+
       - name: Build App Bundle for iOS
         run: |
           cd ios/App

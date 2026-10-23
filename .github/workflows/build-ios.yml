@@ -19,9 +19,9 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      - name: Automatically Patch Capacitor Plugins for Swift 
+      - name: Automatically Patch Capacitor Plugins for Swift
         run: |
-          python3 -c '
+          python3 - << 'EOF'
           import os, re
           files = [
               "node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift",
@@ -39,7 +39,7 @@ jobs:
                   with open(filepath, "w") as f:
                       f.write(content)
                   print(f"Successfully patched {filepath}")
-          '
+          EOF
 
       - name: Build web assets
         run: npm run build

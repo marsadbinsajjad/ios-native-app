@@ -19,13 +19,27 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      - name: Patch LocalNotificationsPlugin for Capacitor 8
+      - name: Automatically Patch Capacitor Plugins for Swift 
         run: |
-          FILE="node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift"
-          if [ -f "$FILE" ]; then
-            sed -i '' 's/let state = call.getString("state")/let state = call.getString("state", "")/g' "$FILE"
-            echo "Successfully patched LocalNotificationsPlugin.swift"
-          fi
+          python3 -c '
+          import os, re
+          files = [
+              "node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift",
+              "node_modules/@capacitor/splash-screen/ios/Sources/SplashScreenPlugin/SplashScreen.swift",
+              "node_modules/@capacitor/splash-screen/ios/Sources/SplashScreenPlugin/SplashScreenPlugin.swift"
+          ]
+          for filepath in files:
+              if os.path.exists(filepath):
+                  with open(filepath, "r") as f:
+                      content = f.read()
+                  # Fix getArray missing default argument
+                  content = re.sub(r"call\.getArray\((?![^)]*,\s*\[)([^)]+)\)", r"call.getArray(\1, [])", content)
+                  # Fix getString missing default argument
+                  content = re.sub(r"call\.getString\((?![^)]*,\s*[\"\'])([^)]+)\)", r"call.getString(\1, \"\")", content)
+                  with open(filepath, "w") as f:
+                      f.write(content)
+                  print(f"Successfully patched {filepath}")
+          '
 
       - name: Build web assets
         run: npm run build

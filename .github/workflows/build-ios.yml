@@ -1,11 +1,11 @@
 name: Build iOS App
 
 on:
-  workflow_dispatch: # Allows manual trigger from GitHub
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout code
@@ -14,10 +14,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build web assets
         run: npm run build
@@ -28,7 +28,7 @@ jobs:
       - name: Build App Bundle for iOS
         run: |
           cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGN_ALLOWED=NO
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 
       - name: Package into IPA for Sideloadly
         run: |

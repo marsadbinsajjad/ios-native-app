@@ -17,32 +17,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Cleanly Patch Capacitor Plugins for Swift
-        run: |
-          python3 - << 'EOF'
-          import os
-          files = [
-              "node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift",
-              "node_modules/@capacitor/splash-screen/ios/Sources/SplashScreenPlugin/SplashScreen.swift",
-              "node_modules/@capacitor/splash-screen/ios/Sources/SplashScreenPlugin/SplashScreenPlugin.swift"
-          ]
-          for filepath in files:
-              if os.path.exists(filepath):
-                  with open(filepath, "r") as f:
-                      content = f.read()
-                  
-                  # Exact safe replacements for Swift syntax
-                  content = content.replace('call.getString("state")', 'call.getString("state", "")')
-                  content = content.replace('call.getArray("types", JSObject.self, [])', 'call.getArray("types", JSObject.self) ?? []')
-                  content = content.replace('call.getArray("notifications", JSObject.self, [])', 'call.getArray("notifications", JSObject.self) ?? []')
-                  content = content.replace('call.getArray("ids", [])', 'call.getArray("ids") ?? []')
-                  
-                  with open(filepath, "w") as f:
-                      f.write(content)
-                  print(f"Successfully patched {filepath}")
-          EOF
+        run: npm install
 
       - name: Build web assets
         run: npm run build

@@ -1,0 +1,45 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch: # Allows you to manually trigger the build from GitHub
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Build App Bundle for iOS
+        run: |
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGN_ALLOWED=NO
+
+      - name: Package into IPA for Sideloadly
+        run: |
+          mkdir -p payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app payload/
+          cd payload
+          zip -r ../App.ipa App.app
+          cd ..
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-ipa
+          path: App.ipa

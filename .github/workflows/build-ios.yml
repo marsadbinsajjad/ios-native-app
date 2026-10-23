@@ -1,7 +1,11 @@
+
 name: Build iOS App
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -15,9 +19,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build web assets
         run: npm run build
@@ -25,36 +30,51 @@ jobs:
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
-      - name: Automatically Patch SceneDelegate for Capacitor
+      - name: Check iOS project
         run: |
-          python3 - << 'EOF'
-          import os
-          scene_path = "ios/App/App/SceneDelegate.swift"
-          if os.path.exists(scene_path):
-              with open(scene_path, "r") as f:
-                  content = f.read()
-              if "import Capacitor" not in content:
-                  content = content.replace("import UIKit", "import UIKit\nimport Capacitor")
-                  with open(scene_path, "w") as f:
-                      f.write(content)
-                  print("Successfully injected import Capacitor into SceneDelegate.swift")
-          EOF
+          test -d ios/App/App.xcodeproj
+          test -f ios/App/App/SceneDelegate.swift
+          echo "iOS project files found."
 
-      - name: Build App Bundle for iOS
+      - name: Install CocoaPods if needed
         run: |
-          cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          if [ -f ios/App/Podfile ]; then
+            sudo gem install cocoapods
+            cd ios/App
+            pod install
+          fi
 
-      - name: Package into IPA for Sideloadly
+      - name: Build App for iPhone
         run: |
-          mkdir -p payload
-          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app payload/
-          cd payload
-          zip -r ../App.ipa App.app
-          cd ..
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath ios-build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package IPA
+        run: |
+          APP_PATH="ios-build/Build/Products/Release-iphoneos/App.app"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: App.app was not generated."
+            exit 1
+          fi
+
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/App.app
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload App.ipa
+
+          echo "IPA archive created."
+          ls -lh App.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-ipa
+          name: winter-arc-ios-ipa
           path: App.ipa
+          if-no-files-found: error
+          retention-days: 7

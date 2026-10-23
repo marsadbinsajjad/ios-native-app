@@ -24,18 +24,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Show Capacitor versions
+        run: npm ls @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
+
       - name: Build web assets
         run: npm run build
 
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
+<<<<<<< Updated upstream
       - name: Check iOS project
+=======
+      - name: Check iOS project files
+>>>>>>> Stashed changes
         run: |
           test -d ios/App/App.xcodeproj
           test -f ios/App/App/SceneDelegate.swift
           echo "iOS project files found."
 
+<<<<<<< Updated upstream
       - name: Install CocoaPods if needed
         run: |
           if [ -f ios/App/Podfile ]; then
@@ -57,6 +65,22 @@ jobs:
 
       - name: Package IPA
         run: |
+=======
+      - name: Build App for iPhone
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ios-build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package IPA
+        run: |
+>>>>>>> Stashed changes
           APP_PATH="ios-build/Build/Products/Release-iphoneos/App.app"
 
           if [ ! -d "$APP_PATH" ]; then
@@ -64,11 +88,21 @@ jobs:
             exit 1
           fi
 
+<<<<<<< Updated upstream
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/App.app
           /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload App.ipa
 
           echo "IPA archive created."
+=======
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/App.app
+
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload App.ipa
+
+          echo "IPA archive created successfully."
+>>>>>>> Stashed changes
           ls -lh App.ipa
 
       - name: Upload IPA Artifact
